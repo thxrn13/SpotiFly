@@ -1,6 +1,6 @@
 import flet as ft
 import configparser
-from spotify_helper import SpotifyHelper
+from state import AppState
 
 config = configparser.ConfigParser()
 config.read('.config')
@@ -9,10 +9,10 @@ PORT = config.getint('General', 'PORT')
 
 def main(page: ft.Page):
     # Create helper instance
-    spotify_helper = SpotifyHelper(page)
-    logged_user = spotify_helper.logged_user
-    page.on_login = spotify_helper.on_login
-    page.on_logout = spotify_helper.on_logout
+    app_state = AppState(page)
+    logged_user = app_state.logged_user
+    page.on_login = app_state.on_login
+    page.on_logout = app_state.on_logout
     page.appbar = ft.AppBar(
         leading=ft.IconButton(
             icon=ft.Icons.MENU,
@@ -23,8 +23,7 @@ def main(page: ft.Page):
         center_title=True,
         bgcolor="black",
         actions=[
-            spotify_helper.login_button,
-            spotify_helper.logout_button,
+            app_state.logout_button,
             ft.IconButton(
                 icon=ft.Icons.SETTINGS,
                 icon_color="white",
@@ -44,6 +43,7 @@ def main(page: ft.Page):
                         alignment=ft.MainAxisAlignment.CENTER,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
+                            app_state.login_button,
                             logged_user,
                         ],
                     ),
@@ -51,7 +51,7 @@ def main(page: ft.Page):
                         horizontal_alignment=ft.CrossAxisAlignment.START,
                         expand=True,
                         controls=[
-                            spotify_helper.playlists_view,
+                            app_state.playlists_view,
                         ],
                         scroll=ft.ScrollMode.AUTO,
                     ),
@@ -77,7 +77,7 @@ def main(page: ft.Page):
                                                     icon=ft.Icons.SKIP_PREVIOUS,
                                                     icon_color="white"
                                                 ),
-                                                spotify_helper.play_pause_button,
+                                                app_state.play_pause_button,
                                                 ft.IconButton(
                                                     icon=ft.Icons.SKIP_NEXT,
                                                     icon_color="white"
