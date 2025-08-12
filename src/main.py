@@ -1,55 +1,78 @@
 import os
+import json
+import httpx
 import flet as ft
 import flet_audio as fa
+from cryptography.fernet import Fernet
 from flet.auth import OAuthProvider
-from dotenv import load_dotenv
+from flet.security import encrypt, decrypt
+from dotenv import load_dotenv, set_key
+import configparser
 
-# Load environment variables from .env file
+# Load environment variables from .env
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
-PORT = 6969
+# Read configuration from .config file
+config = configparser.ConfigParser()
+config.read('.config')
+PORT = config.getint('General', 'PORT')
+AUTH_URL = config.get('General', 'AUTH_URL')
+TOKEN_URL = config.get('General', 'TOKEN_URL')
+SCOPE = json.loads(config.get('General', 'SCOPE'))
+USER_ENDPOINT = config.get('General', 'USER_ENDPOINT')
 REDIRECT_URI = f"http://127.0.0.1:{PORT}/oauth_callback"
-SCOPE = ["user-read-private",
-         "user-read-email",
-         "user-library-read",
-         "user-read-recently-played",
-         "user-top-read",
-         "user-read-playback-state",
-         "user-modify-playback-state",
-         "user-read-currently-playing",
-         "playlist-read-collaborative",
-         "playlist-modify-public",
-         "playlist-modify-private",
-         "playlist-read-public",
-         "playlist-read-private",
-         "playlist-modify-public",
-         "streaming",
-         "app-remote-control",
-         "user-personalized"]
-AUTH_URL = "https://accounts.spotify.com/authorize"
-TOKEN_URL = "https://accounts.spotify.com/api/token"
 url = "https://github.com/mdn/webaudio-examples/blob/main/audio-basics/outfoxing.mp3?raw=true"
+
+# Set up Security
+if not os.getenv("SECRET_KEY"):
+    key = Fernet.generate_key().decode()
+    set_key('.env', 'SECRET_KEY', key)
+else:
+    key = os.getenv("SECRET_KEY")
 
 
 def main(page: ft.Page):
     provider = OAuthProvider(
         client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
         authorization_endpoint=AUTH_URL,
         token_endpoint=TOKEN_URL,
         redirect_url=REDIRECT_URI,
-        scopes=SCOPE,
-        client_secret=CLIENT_SECRET,
-        user_endpoint="https://api.spotify.com/v1/me"
+        user_endpoint=USER_ENDPOINT,
+        user_id_fn=lambda user: user.get("id"),
     )
 
-    def login_click(e):
-        page.login(provider)
+    def get_user_info():
+        if page.auth:
+            headers = {
+                "User-Agent": "Flet",
+                "Authorization": f"Bearer {page.auth.token.access_token}"
+            }
+            user_resp = httpx.get(USER_ENDPOINT, headers=headers)
+            user_resp.raise_for_status()
+            user_info = user_resp.json()
+            logged_in_user_info.value = f"Logged in as: {user_info.get('display_name', 'Unknown')}"
+            page.update()
+
+    def perform_login(e):
+        saved_token = None
+        ejt = page.client_storage.get("myapp.auth_token")
+        if ejt:
+            saved_token = decrypt(ejt, key)
+        if e is not None or saved_token is not None:
+            page.login(provider, saved_token=saved_token)
 
     def on_login(e):
-        print("Login error:", e.error)
-        print("Access token:", page.auth.token)
+        if e.error:
+            raise Exception(f"Login failed: {e.error}")
+
+        jt = page.auth.token.to_json()
+        ejt = encrypt(jt, key)
+        page.client_storage.set("myapp.auth_token", ejt)
+
+        get_user_info()
 
     page.on_login = on_login
 
@@ -83,17 +106,22 @@ def main(page: ft.Page):
 
     page.overlay.append(audio1)
 
+    logged_in_user_info = ft.Text()
+
     page.add(
         ft.Column(
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
                 ft.Button(
                     text="Authorize with Spotify",
-                    on_click=lambda e: login_click(e),
+                    on_click=lambda e: perform_login(e),
                     bgcolor="green",
                     color="white",
                     width=200,
                     height=50,
                 ),
+                logged_in_user_info,
                 ft.BottomAppBar(
                     padding=3,
                     content=ft.Column(
