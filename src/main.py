@@ -8,147 +8,27 @@ from flet.auth import OAuthProvider
 from flet.security import encrypt, decrypt
 from dotenv import load_dotenv, set_key
 import configparser
+from spotify_helper import SpotifyHelper
 
-# Load environment variables from .env
-load_dotenv()
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-
-# Read configuration from .config file
 config = configparser.ConfigParser()
 config.read('.config')
 PORT = config.getint('General', 'PORT')
-AUTH_URL = config.get('General', 'AUTH_URL')
-TOKEN_URL = config.get('General', 'TOKEN_URL')
-USER_ENDPOINT = config.get('General', 'USER_ENDPOINT')
-REDIRECT_URI = f"http://127.0.0.1:{PORT}/oauth_callback"
-url = ("https://github.com/"
-       "mdn/webaudio-examples/blob/main/audio-basics/outfoxing.mp3?raw=true")
-
-# Set up Security
-if not os.getenv("SECRET_KEY"):
-    key = Fernet.generate_key().decode()
-    set_key('.env', 'SECRET_KEY', key)
-else:
-    key = os.getenv("SECRET_KEY")
 
 
 def main(page: ft.Page):
-    provider = OAuthProvider(
-        client_id=CLIENT_ID,  # type: ignore
-        client_secret=CLIENT_SECRET,  # type: ignore
-        authorization_endpoint=AUTH_URL,
-        token_endpoint=TOKEN_URL,
-        redirect_url=REDIRECT_URI,
-        user_endpoint=USER_ENDPOINT,
-        user_id_fn=lambda user: user.get("id"),
-    )
-
-    def get_user_info():
-        if page.auth:
-            headers = {
-                "User-Agent": "Flet",
-                "Authorization":
-                    f"Bearer {page.auth.token.access_token}"  # type: ignore
-            }
-            user_resp = httpx.get(USER_ENDPOINT, headers=headers)
-            user_resp.raise_for_status()
-            user_info = user_resp.json()
-            logged_user.value = f"Logged in as: {
-                user_info.get('display_name', 'Unknown')}"
-            page.update()
-
-    def perform_login(e):
-        saved_token = None
-        ejt = page.client_storage.get("myapp.auth_token")
-        if ejt:
-            saved_token = decrypt(ejt, key)  # type: ignore
-        if e is not None or saved_token is not None:
-            page.login(provider, saved_token=saved_token)  # type: ignore
-
-    def on_login(e):
-        if e.error:
-            raise Exception(f"Login failed: {e.error}")
-
-        jt = page.auth.token.to_json()  # type: ignore
-        ejt = encrypt(jt, key)  # type: ignore
-        page.client_storage.set("myapp.auth_token", ejt)
-        toggle_login_button()
-        get_user_info()
-
-    def change_play_pause_button(e):
-        if e.data == ft.AudioState.PAUSED.value:
-            play_pause_button.icon = ft.Icons.PLAY_ARROW
-            play_pause_button.on_click = lambda e: audio1.resume()
-        elif e.data == ft.AudioState.PLAYING.value:
-            play_pause_button.icon = ft.Icons.PAUSE
-            play_pause_button.on_click = lambda e: audio1.pause()
-        play_pause_button.update()
-
-    play_pause_button = ft.IconButton(
-        icon=ft.Icons.PLAY_ARROW,
-        icon_color="black",
-        bgcolor="green",
-        on_click=lambda _: audio1.play()
-        )
-
-    def logout_button_click(e):
-        page.client_storage.remove("myapp.auth_token")
-        page.logout()
-
-    def on_logout(e):
-        toggle_login_button()
-        page.update()
-
-    def toggle_login_button():
-        login_button.visible = page.auth is None
-        logged_user.visible = logout_button.visible = page.auth is not None
-        page.update()
-
-    page.on_login = on_login
-    page.on_logout = on_logout
-    login_button = ft.ElevatedButton(
-        text="Login with Spotify",
-        on_click=perform_login,
-        bgcolor="green",
-        color="white",
-        width=200,
-        height=50,
-    )
-
-    logout_button = ft.ElevatedButton(
-        text="Logout",
-        on_click=logout_button_click,
-        bgcolor="red",
-        color="white",
-        width=200,
-        height=50,
-        visible=False,
-    )
-
-    audio1 = fa.Audio(
-        src=url,
-        autoplay=False,
-        volume=1,
-        balance=0,
-        on_loaded=lambda _: print("Loaded"),
-        on_duration_changed=lambda e: print("Duration changed:", e.data),
-        on_position_changed=lambda e: print("Position changed:", e.data),
-        on_state_changed=change_play_pause_button,
-        on_seek_complete=lambda _: print("Seek complete"),
-    )
-
-    page.overlay.append(audio1)
-
-    logged_user = ft.Text()
+    # Create helper instance
+    spotify_helper = SpotifyHelper(page)
+    logged_user = spotify_helper.logged_user
+    page.on_login = spotify_helper.on_login
+    page.on_logout = spotify_helper.on_logout
 
     page.add(
         ft.Column(
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
-                login_button,
-                logout_button,
+                spotify_helper.login_button,
+                spotify_helper.logout_button,
                 logged_user,
                 ft.BottomAppBar(
                     padding=3,
@@ -171,7 +51,7 @@ def main(page: ft.Page):
                                         icon=ft.Icons.SKIP_PREVIOUS,
                                         icon_color="white"
                                     ),
-                                    play_pause_button,
+                                    spotify_helper.play_pause_button,
                                     ft.IconButton(
                                         icon=ft.Icons.SKIP_NEXT,
                                         icon_color="white"
