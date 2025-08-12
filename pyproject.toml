@@ -10,7 +10,9 @@ authors = [
 dependencies = [
   "flet==0.28.3",
   "flet-audio",
-  "dotenv"
+  "dotenv",
+  "httpx",
+  "cryptography",
 ]
 
 [tool.flet]
@@ -35,7 +37,9 @@ path = "src"
 dev-dependencies = [
     "flet[all]==0.28.3",
     "flet-audio",
-    "dotenv"
+    "dotenv",
+    "httpx",
+    "cryptography",
 ]
 
 [tool.poetry]

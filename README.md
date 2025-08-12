@@ -12,9 +12,9 @@
 
 ## Set environment variables
 
-Place Client ID and Client secret into an ```.env``` file in the root directory with the structure:
+Place Client ID and Client secret into an `.env` file in the root directory with the structure:
 
-``` markdown
+``` terminal
 CLIENT_ID = <Client Id from Spotify>
 CLIENT_SECRET = <Client Secret from Spotify>
 ```

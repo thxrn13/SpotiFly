@@ -35,8 +35,8 @@ else:
 
 def main(page: ft.Page):
     provider = OAuthProvider(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
+        client_id=CLIENT_ID,  # type: ignore
+        client_secret=CLIENT_SECRET,  # type: ignore
         authorization_endpoint=AUTH_URL,
         token_endpoint=TOKEN_URL,
         redirect_url=REDIRECT_URI,
@@ -48,28 +48,30 @@ def main(page: ft.Page):
         if page.auth:
             headers = {
                 "User-Agent": "Flet",
-                "Authorization": f"Bearer {page.auth.token.access_token}"
+                "Authorization":
+                    f"Bearer {page.auth.token.access_token}"  # type: ignore
             }
             user_resp = httpx.get(USER_ENDPOINT, headers=headers)
             user_resp.raise_for_status()
             user_info = user_resp.json()
-            logged_in_user_info.value = f"Logged in as: {user_info.get('display_name', 'Unknown')}"
+            logged_in_user_info.value = f"Logged in as: {
+                user_info.get('display_name', 'Unknown')}"
             page.update()
 
     def perform_login(e):
         saved_token = None
         ejt = page.client_storage.get("myapp.auth_token")
         if ejt:
-            saved_token = decrypt(ejt, key)
+            saved_token = decrypt(ejt, key)  # type: ignore
         if e is not None or saved_token is not None:
-            page.login(provider, saved_token=saved_token)
+            page.login(provider, saved_token=saved_token)  # type: ignore
 
     def on_login(e):
         if e.error:
             raise Exception(f"Login failed: {e.error}")
 
-        jt = page.auth.token.to_json()
-        ejt = encrypt(jt, key)
+        jt = page.auth.token.to_json()  # type: ignore
+        ejt = encrypt(jt, key)  # type: ignore
         page.client_storage.set("myapp.auth_token", ejt)
 
         get_user_info()
@@ -138,9 +140,13 @@ def main(page: ft.Page):
                                 alignment=ft.MainAxisAlignment.CENTER,
                                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                                 controls=[
-                                    ft.IconButton(icon=ft.Icons.SKIP_PREVIOUS, icon_color="white"),
+                                    ft.IconButton(
+                                        icon=ft.Icons.SKIP_PREVIOUS,
+                                        icon_color="white"),
                                     play_pause_button,
-                                    ft.IconButton(icon=ft.Icons.SKIP_NEXT, icon_color="white")
+                                    ft.IconButton(
+                                        icon=ft.Icons.SKIP_NEXT,
+                                        icon_color="white")
                                 ],
                             ),
                         ],
@@ -151,4 +157,4 @@ def main(page: ft.Page):
     )
 
 
-ft.app(main, port=PORT, view=ft.WEB_BROWSER)
+ft.app(main, port=PORT, view=ft.WEB_BROWSER)  # type: ignore
