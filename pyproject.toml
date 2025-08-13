@@ -13,6 +13,7 @@ dependencies = [
   "dotenv",
   "httpx",
   "cryptography",
+  "spotipy",
 ]
 
 [tool.flet]
@@ -40,6 +41,7 @@ dev-dependencies = [
     "dotenv",
     "httpx",
     "cryptography",
+    "spotipy"
 ]
 
 [tool.poetry]

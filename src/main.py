@@ -8,29 +8,7 @@ PORT = config.getint('General', 'PORT')
 
 
 def main(page: ft.Page):
-    # Create helper instance
     app_state = AppState(page)
-    logged_user = app_state.logged_user
-    page.on_login = app_state.on_login
-    page.on_logout = app_state.on_logout
-    page.appbar = ft.AppBar(
-        leading=ft.IconButton(
-            icon=ft.Icons.MENU,
-            icon_color="white",
-            on_click=lambda _: page.go("/"),
-        ),
-        title=ft.Text("SpotiFly"),
-        center_title=True,
-        bgcolor="black",
-        actions=[
-            app_state.logout_button,
-            ft.IconButton(
-                icon=ft.Icons.SETTINGS,
-                icon_color="white",
-                on_click=lambda _: page.go("/settings"),
-            ),
-        ]
-    )
 
     # Create route for the main view
     def route_change(route):
@@ -44,7 +22,7 @@ def main(page: ft.Page):
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
                             app_state.login_button,
-                            logged_user,
+                            app_state.logged_user
                         ],
                     ),
                     ft.Row(
@@ -103,12 +81,63 @@ def main(page: ft.Page):
                 appbar=page.appbar,
             ),
         )
+        if page.route == '/client_id_form':
+            page.views.append(
+                ft.View(
+                    '/client_id_form',
+                    controls=[
+                        ft.Row(
+                            controls=[
+                                app_state.client_id_input_field,
+                                app_state.client_id_submit_button,
+                            ]
+                        )
+                    ]
+                )
+            )
+
+        if page.route == '/settings':
+            page.views.append(
+                ft.View(
+                    '/settings',
+                    controls=[
+                        ft.Column(
+                            controls=[
+                                app_state.client_id_input_field,
+                                app_state.client_id_submit_button,
+                                app_state.clear_client_id_button
+                            ]
+                        )
+                    ],
+                    appbar=page.appbar
+                )
+            )
         page.update()
 
     def view_pop(view):
         page.views.pop()
         top_view = page.views[-1]
         page.go(top_view.route)
+
+    page.appbar = ft.AppBar(
+        leading=ft.IconButton(
+            icon=ft.Icons.MENU,
+            icon_color="white",
+            on_click=lambda _: page.go("/"),
+        ),
+        title=ft.Text("SpotiFly"),
+        center_title=True,
+        bgcolor="black",
+        actions=[
+            app_state.logout_button,
+            ft.IconButton(
+                icon=ft.Icons.SETTINGS,
+                icon_color="white",
+                on_click=lambda _: page.go("/settings"),
+            ),
+        ]
+    )
+    app_state.check_logged_in()
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
