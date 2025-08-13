@@ -47,13 +47,26 @@ def main(page: ft.Page):
                             logged_user,
                         ],
                     ),
-                    ft.Column(
-                        horizontal_alignment=ft.CrossAxisAlignment.START,
-                        expand=True,
+                    ft.Row(
                         controls=[
-                            app_state.playlists_view,
+                            ft.Column(
+                                controls=[
+                                    app_state.playlists_view,
+                                ],
+                                scroll=ft.ScrollMode.AUTO,
+                                expand=True,
+                                horizontal_alignment=ft.CrossAxisAlignment.STRETCH
+                            ),
+                            ft.Column(
+                                controls=[
+                                    app_state.tracks_view
+                                ],
+                                scroll=ft.ScrollMode.AUTO,
+                                expand=True,
+                                horizontal_alignment=ft.CrossAxisAlignment.STRETCH
+                            ),
                         ],
-                        scroll=ft.ScrollMode.AUTO,
+                        expand=True,
                     ),
                 ],
                 bottom_appbar=ft.BottomAppBar(

@@ -100,6 +100,15 @@ class AppState:
             expand=True,
         )
 
+        self.tracks_view = ft.ListView(
+            visible=False,
+            spacing=10,
+            padding=10,
+            controls=[],
+            width=400,
+            expand=True,
+        )
+
     def get_user_info(self):
         if self.page.auth:
             user_info = self.spotify_helper.get_user_info(self.page.auth.token.access_token)
@@ -183,6 +192,55 @@ class AppState:
                         ),
                         title=ft.Text(playlist["name"]),
                         subtitle=ft.Text(f"{playlist['num_tracks']} tracks"),
+                        data=playlist,
+                        on_click=lambda e: self.show_tracks(e.control.data)
+                    ),
+                )
+            )
+        self.page.update()
+
+    def get_tracks(self, playlist):
+        if not self.page.auth:
+            return []
+        num_tracks = playlist['num_tracks']
+        batches = num_tracks // 50
+        extras = num_tracks % 50
+        tracks = []
+        for i in range(0, batches):
+            tracks_batch = self.spotify_helper.get_tracks(
+                href=playlist['track_info'],
+                offset=i*50)
+            for track in tracks_batch:
+                tracks.append(track)
+        if extras > 0:
+            final_batch = self.spotify_helper.get_tracks(
+                href=playlist['track_info'],
+                offset=batches*50)
+            for track in final_batch:
+                tracks.append(track)
+        return tracks
+
+    def show_tracks(self, playlist):
+        print(f"Showing tracks for playlist: {playlist['name']}")
+        self.tracks_view.visible = True
+        self.tracks_view.controls.clear()
+        tracks = self.get_tracks(playlist)
+        print(f"Tracks fetched: {len(tracks)}")
+        self.tracks_view.controls.append(
+            ft.Text(f"{playlist['name']}", size=20, weight=ft.FontWeight.BOLD)
+        )
+        for track in tracks:
+            self.tracks_view.controls.append(
+                ft.Card(
+                    content=ft.ListTile(
+                        leading=ft.Image(
+                            src=track.get('art', [{}])[0].get('url', ''),
+                            width=30,
+                            height=30,
+                            fit=ft.ImageFit.COVER
+                        ),
+                        title=ft.Text(track.get("name", "Unknown Track")),
+                        subtitle=ft.Text(track.get('artist', 'Unknown Artist')),
                     ),
                 )
             )
