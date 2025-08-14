@@ -1,12 +1,14 @@
+import configparser
+from dotenv import load_dotenv
+import flet as ft
 import os
 import spotipy
-import flet as ft
 from spotipy.oauth2 import SpotifyPKCE
-from dotenv import load_dotenv
-from _utils.controls import ControlStore
-from _utils.views import ViewStore
-import configparser
 from pathlib import Path
+from _utils.views import ViewStore
+from _utils.controls import ControlStore
+
+
 cwd = Path(__file__).parents[2]
 
 
@@ -80,13 +82,14 @@ class AppState:
 
     def get_user_info(self):
         results = self.sp.current_user()
-        self.logged_user.visible = True
-        self.logged_user.value = f"Current User: {results['display_name']}"
+        self.control_store.logged_user.visible = True
+        self.control_store.logged_user.value = f"Current User: {results['display_name']}"
         self.page.update()
 
     def on_login(self, e):
         self.get_user_info()
         self.show_playlists()
+        self.get_user_devices()
         self.toggle_login_button()
 
     def change_play_pause_button(self, e):
@@ -201,6 +204,14 @@ class AppState:
                 self.control_store.create_track_card(track)
             )
         self.page.update()
+
+    def get_user_devices(self):
+        response = self.sp.devices()
+        devices = response.get('devices')
+        for device in devices:
+            self.control_store.device_list.options.append(
+                self.control_store.create_device_option(device)
+            )
 
     def play_track(self, id):
         pass

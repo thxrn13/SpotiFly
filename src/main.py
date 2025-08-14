@@ -1,5 +1,5 @@
-import flet as ft
 import configparser
+import flet as ft
 from _utils.state import AppState
 
 config = configparser.ConfigParser()

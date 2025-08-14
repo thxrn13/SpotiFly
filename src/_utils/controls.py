@@ -13,6 +13,10 @@ class ControlStore:
             visible=True
         )
 
+        self.device_list = ft.Dropdown(
+            options=[]
+        )
+
         self.play_pause_button = ft.IconButton(
             icon=ft.Icons.PLAY_ARROW,
             icon_color="black",
@@ -80,6 +84,7 @@ class ControlStore:
             center_title=True,
             bgcolor="black",
             actions=[
+                self.device_list,
                 self.logout_button,
                 ft.IconButton(
                     icon=ft.Icons.SETTINGS,
@@ -152,3 +157,18 @@ class ControlStore:
                         on_click=lambda e: self.app_state.show_tracks(e.control.data)
                     ),
                 )
+
+    def create_device_option(self, device):
+        return ft.DropdownOption(
+            content=ft.Text(device.get('name').replace('_', ' ')),
+            text=device.get('name').replace('_', ' '),
+            data={
+                'id': device.get('id'),
+                'is_active': device.get('is_active'),
+                'is_restricted': device.get('is_restricted'),
+                'is_private_session': device.get('is_private_session'),
+                'supports_volume': device.get('supports_volume'),
+                'type': device.get('type'),
+                'volume_percent': device.get('volume_percent')
+            }
+        )
