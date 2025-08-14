@@ -239,7 +239,8 @@ class AppState:
 
     def get_currently_playing(self):
         response = self.sp.current_playback()
-        pprint(response)
+        track_title = response.get('item').get('name')
+        artists = ', '.join([artist.get('name') for artist in response.get('item').get('artists')])
 
     def play_track(self, id):
         pass
