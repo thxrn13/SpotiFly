@@ -1,10 +1,14 @@
 import configparser
 import flet as ft
+import os
+from pathlib import Path
 from _utils.state import AppState
 
+cwd = Path(__file__).parents[1]
+print(os.path.join(cwd, 'src', 'config', '.config'))
 config = configparser.ConfigParser()
-config.read('.config')
-PORT = config.getint('General', 'PORT')
+config.read(os.path.join(cwd, 'src', 'config', '.config'))
+PORT = config.getint('GENERAL', 'PORT')
 
 
 def main(page: ft.Page):

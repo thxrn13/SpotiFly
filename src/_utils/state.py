@@ -7,7 +7,6 @@ from spotipy.oauth2 import SpotifyPKCE
 from pathlib import Path
 from _utils.views import ViewStore
 from _utils.controls import ControlStore
-from pprint import pprint
 
 
 cwd = Path(__file__).parents[2]
@@ -23,27 +22,27 @@ class AppState:
 
         # Read configuration from .config file
         config = configparser.ConfigParser()
-        config.read('.config')
+        config.read(os.path.join(cwd, 'src', 'config', '.config'))
 
         self.client_id = None
         self.provider = None
-        self.sp = spotipy.Spotify()
+        self.sp = None
         # Set up Spotify API configuration
         if not os.getenv("CLIENT_ID"):
             self.get_client_id()
         else:
             self.client_id = os.getenv("CLIENT_ID")
 
-        self.port = config.getint('General', 'PORT')
-        self.redirect_url = config.get('General', 'REDIRECT_URL')
-        self.scopes = config.get('General', 'SCOPES').split(",")
-        if self.client_id:
+        self.port = config.getint('GENERAL', 'PORT')
+        self.redirect_url = config.get('GENERAL', 'REDIRECT_URL')
+        self.scopes = config.get('GENERAL', 'SCOPES').split(",")
+        if self.client_id is not None:
             self.provider = SpotifyPKCE(
                 client_id=self.client_id,
                 redirect_uri=self.redirect_url,
                 scope=self.scopes
             )
-            self.sp.auth_manager = self.provider
+            self.sp = spotipy.Spotify(auth_manager=self.provider)
 
         self.devices = {}
         self.play_state = "paused"
@@ -95,7 +94,6 @@ class AppState:
         self.get_user_info()
         self.show_playlists()
         self.get_user_devices()
-        self.get_currently_playing()
         self.change_play_pause_button()
         self.toggle_login_button()
 
@@ -226,6 +224,7 @@ class AppState:
         self.sp.transfer_playback(device_data.get('id'), force_play=remain_playing)
         self.change_play_pause_button()
         self.active_device = device_data.get('id')
+        self.get_currently_playing()
 
     def play_pause(self):
         response = self.sp.current_playback()
@@ -241,6 +240,6 @@ class AppState:
         response = self.sp.current_playback()
         track_title = response.get('item').get('name')
         artists = ', '.join([artist.get('name') for artist in response.get('item').get('artists')])
-
+        
     def play_track(self, id):
         pass

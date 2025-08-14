@@ -16,7 +16,7 @@ class ControlStore:
         self.device_list = ft.Dropdown(
             label="Active Device",
             options=[],
-            on_change=lambda e: self.app_state.connect_to_device(e.data)
+            on_change=lambda e: self.app_state.connect_to_device(e.data),
         )
 
         self.play_pause_button = ft.IconButton(
@@ -38,13 +38,11 @@ class ControlStore:
             height=25
         )
 
-        self.logout_button = ft.ElevatedButton(
-            text="Logout",
+        self.logout_button = ft.IconButton(
+            icon=ft.Icons.LOGOUT,
             on_click=lambda e: self.app_state.logout_button_click(e),
             bgcolor="red",
-            color="white",
-            width=100,
-            height=25,
+            icon_color="white",
             visible=False,
         )
 
@@ -76,11 +74,34 @@ class ControlStore:
                     on_click=lambda e: self.app_state.save_client_id(e),
                     )
 
+        self.track_title = ft.Text(
+            value="SONG TITLE",
+            text_align=ft.TextAlign.CENTER,
+            size=14
+        )
+
+        self.artist_name = ft.Text(
+            value="ARTIST NAME",
+            text_align=ft.TextAlign.CENTER,
+            size=10
+        )
+
         self.app_bar = ft.AppBar(
-            leading=ft.IconButton(
-                icon=ft.Icons.MENU,
-                icon_color="white",
-                on_click=lambda _: app_state.page.go("/"),
+            leading=ft.Row(
+                controls=[
+                    ft.IconButton(
+                        icon=ft.Icons.MENU,
+                        icon_color="white",
+                        on_click=lambda _: app_state.page.go("/"),
+                    ),
+                    ft.Column(
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        controls=[
+                            self.track_title,
+                            self.artist_name
+                        ]
+                    )
+                ]
             ),
             title=ft.Text("SpotiFly"),
             center_title=True,
@@ -97,68 +118,55 @@ class ControlStore:
         )
 
         self.bottom_app_bar = ft.BottomAppBar(
-                                        padding=5,
-                                        content=ft.Column(
-                                            spacing=5,
-                                            alignment=ft.MainAxisAlignment.CENTER,
-                                            controls=[
-                                                ft.Row(
-                                                    alignment=ft.MainAxisAlignment.CENTER,
-                                                    controls=[
-                                                        ft.Text("LOREM IPSUM")
-                                                    ]
-                                                ),
-                                                ft.Row(
-                                                    alignment=ft.MainAxisAlignment.CENTER,
-                                                    vertical_alignment=ft.CrossAxisAlignment
-                                                    .CENTER,
-                                                    controls=[
-                                                        ft.IconButton(
-                                                            icon=ft.Icons.SKIP_PREVIOUS,
-                                                            icon_color="white"
-                                                        ),
-                                                        self.play_pause_button,
-                                                        ft.IconButton(
-                                                            icon=ft.Icons.SKIP_NEXT,
-                                                            icon_color="white"
-                                                        )
-                                                    ],
-                                                ),
-                                            ],
-                                        )
-                                    )
+            content=ft.Row(
+                alignment=ft.MainAxisAlignment.CENTER,
+                controls=[
+                    ft.IconButton(
+                        icon=ft.Icons.SKIP_PREVIOUS,
+                        icon_color="white",
+                        on_click=lambda e: self.app_state.skip_back()
+                    ),
+                    self.play_pause_button,
+                    ft.IconButton(
+                        icon=ft.Icons.SKIP_NEXT,
+                        icon_color="white",
+                        on_click=lambda e: self.app_state.skip_next()
+                    )
+                ],
+            )
+        )
 
     def create_track_card(self, track):
         track_card = ft.Card(
-                        content=ft.ListTile(
-                            leading=ft.Image(
-                                src=track.get('art', [{}])[0].get('url', ''),
-                                width=30,
-                                height=30,
-                                fit=ft.ImageFit.COVER
-                            ),
-                            title=ft.Text(track.get("name", "Unknown Track")),
-                            subtitle=ft.Text(track.get('artist', 'Unknown Artist')),
-                            on_click=self.app_state.play_track(track['id'])
-                        ),
-                    )
+            content=ft.ListTile(
+                leading=ft.Image(
+                    src=track.get('art', [{}])[0].get('url', ''),
+                    width=30,
+                    height=30,
+                    fit=ft.ImageFit.COVER
+                ),
+                title=ft.Text(track.get("name", "Unknown Track")),
+                subtitle=ft.Text(track.get('artist', 'Unknown Artist')),
+                on_click=self.app_state.play_track(track['id'])
+            ),
+        )
         return track_card
 
     def create_playlist_card(self, playlist):
         return ft.Card(
-                    content=ft.ListTile(
-                        leading=ft.Image(
-                            src=playlist["images"][0].get("url", ""),
-                            width=30,
-                            height=30,
-                            fit=ft.ImageFit.COVER
-                        ),
-                        title=ft.Text(playlist["name"]),
-                        subtitle=ft.Text(f"{playlist['num_tracks']} tracks"),
-                        data=playlist,
-                        on_click=lambda e: print(e.data)  # self.app_state.show_tracks(e.control.data)
-                    ),
-                )
+            content=ft.ListTile(
+                leading=ft.Image(
+                    src=playlist["images"][0].get("url", ""),
+                    width=30,
+                    height=30,
+                    fit=ft.ImageFit.COVER
+                ),
+                title=ft.Text(playlist["name"]),
+                subtitle=ft.Text(f"{playlist['num_tracks']} tracks"),
+                data=playlist,
+                on_click=lambda e: self.app_state.show_tracks(e.control.data)
+            ),
+        )
 
     def create_device_option(self, device):
         device_name = device.get('name').replace('_', ' ')
