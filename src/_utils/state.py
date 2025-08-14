@@ -7,6 +7,7 @@ from spotipy.oauth2 import SpotifyPKCE
 from pathlib import Path
 from _utils.views import ViewStore
 from _utils.controls import ControlStore
+from pprint import pprint
 
 
 cwd = Path(__file__).parents[2]
@@ -26,7 +27,7 @@ class AppState:
 
         self.client_id = None
         self.provider = None
-        self.sp = None
+        self.sp = spotipy.Spotify()
         # Set up Spotify API configuration
         if not os.getenv("CLIENT_ID"):
             self.get_client_id()
@@ -42,7 +43,11 @@ class AppState:
                 redirect_uri=self.redirect_url,
                 scope=self.scopes
             )
-            self.sp = spotipy.Spotify(auth_manager=self.provider)
+            self.sp.auth_manager = self.provider
+
+        self.devices = {}
+        self.play_state = "paused"
+        self.active_device = None
 
         # # Initialize audio player and buttons
         # self.audio1 = fa.Audio(
@@ -90,15 +95,15 @@ class AppState:
         self.get_user_info()
         self.show_playlists()
         self.get_user_devices()
+        self.get_currently_playing()
+        self.change_play_pause_button()
         self.toggle_login_button()
 
-    def change_play_pause_button(self, e):
-        if e.data == ft.AudioState.PAUSED.value:
+    def change_play_pause_button(self):
+        if self.play_state == "paused":
             self.control_store.play_pause_button.icon = ft.Icons.PLAY_ARROW
-            self.control_store.play_pause_button.on_click = None
-        elif e.data == ft.AudioState.PLAYING.value:
+        elif self.play_state == "playing":
             self.control_store.play_pause_button.icon = ft.Icons.PAUSE
-            self.control_store.play_pause_button.on_click = None
         self.page.update()
 
     def logout_button_click(self, e):
@@ -212,6 +217,29 @@ class AppState:
             self.control_store.device_list.options.append(
                 self.control_store.create_device_option(device)
             )
+
+    def connect_to_device(self, device_name):
+        device_data = self.devices[device_name]
+        remain_playing = True
+        if self.play_state == 'paused':
+            remain_playing = False
+        self.sp.transfer_playback(device_data.get('id'), force_play=remain_playing)
+        self.change_play_pause_button()
+        self.active_device = device_data.get('id')
+
+    def play_pause(self):
+        response = self.sp.current_playback()
+        if response.get('is_playing'):
+            self.play_state = 'paused'
+            self.sp.pause_playback(self.active_device)
+        else:
+            self.play_state = 'playing'
+            self.sp.start_playback(self.active_device)
+        self.change_play_pause_button()
+
+    def get_currently_playing(self):
+        response = self.sp.current_playback()
+        pprint(response)
 
     def play_track(self, id):
         pass

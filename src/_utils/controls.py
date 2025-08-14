@@ -14,14 +14,16 @@ class ControlStore:
         )
 
         self.device_list = ft.Dropdown(
-            options=[]
+            label="Active Device",
+            options=[],
+            on_change=lambda e: self.app_state.connect_to_device(e.data)
         )
 
         self.play_pause_button = ft.IconButton(
             icon=ft.Icons.PLAY_ARROW,
             icon_color="black",
             bgcolor="green",
-            on_click=None,
+            on_click=lambda _: self.app_state.play_pause(),
             icon_size=20,
         )
 
@@ -154,15 +156,13 @@ class ControlStore:
                         title=ft.Text(playlist["name"]),
                         subtitle=ft.Text(f"{playlist['num_tracks']} tracks"),
                         data=playlist,
-                        on_click=lambda e: self.app_state.show_tracks(e.control.data)
+                        on_click=lambda e: print(e.data)  # self.app_state.show_tracks(e.control.data)
                     ),
                 )
 
     def create_device_option(self, device):
-        return ft.DropdownOption(
-            content=ft.Text(device.get('name').replace('_', ' ')),
-            text=device.get('name').replace('_', ' '),
-            data={
+        device_name = device.get('name').replace('_', ' ')
+        self.app_state.devices[device_name] = {
                 'id': device.get('id'),
                 'is_active': device.get('is_active'),
                 'is_restricted': device.get('is_restricted'),
@@ -171,4 +171,7 @@ class ControlStore:
                 'type': device.get('type'),
                 'volume_percent': device.get('volume_percent')
             }
+        return ft.DropdownOption(
+            content=ft.Text(device_name),
+            text=device_name,
         )
