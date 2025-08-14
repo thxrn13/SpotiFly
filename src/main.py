@@ -1,6 +1,6 @@
 import flet as ft
 import configparser
-from state import AppState
+from _utils.state import AppState
 
 config = configparser.ConfigParser()
 config.read('.config')
@@ -14,103 +14,16 @@ def main(page: ft.Page):
     def route_change(route):
         page.views.clear()
         page.views.append(
-            ft.View(
-                "/",
-                controls=[
-                    ft.Row(
-                        alignment=ft.MainAxisAlignment.CENTER,
-                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                        controls=[
-                            app_state.login_button,
-                            app_state.logged_user
-                        ],
-                    ),
-                    ft.Row(
-                        controls=[
-                            ft.Column(
-                                controls=[
-                                    app_state.playlists_view,
-                                ],
-                                scroll=ft.ScrollMode.AUTO,
-                                expand=True,
-                                horizontal_alignment=ft.CrossAxisAlignment.STRETCH
-                            ),
-                            ft.Column(
-                                controls=[
-                                    app_state.tracks_view
-                                ],
-                                scroll=ft.ScrollMode.AUTO,
-                                expand=True,
-                                horizontal_alignment=ft.CrossAxisAlignment.STRETCH
-                            ),
-                        ],
-                        expand=True,
-                    ),
-                ],
-                bottom_appbar=ft.BottomAppBar(
-                                padding=5,
-                                content=ft.Column(
-                                    spacing=5,
-                                    alignment=ft.MainAxisAlignment.CENTER,
-                                    controls=[
-                                        ft.Row(
-                                            alignment=ft.MainAxisAlignment.CENTER,
-                                            controls=[
-                                                ft.Text("LOREM IPSUM")
-                                            ]
-                                        ),
-                                        ft.Row(
-                                            alignment=ft.MainAxisAlignment.CENTER,
-                                            vertical_alignment=ft.CrossAxisAlignment
-                                            .CENTER,
-                                            controls=[
-                                                ft.IconButton(
-                                                    icon=ft.Icons.SKIP_PREVIOUS,
-                                                    icon_color="white"
-                                                ),
-                                                app_state.play_pause_button,
-                                                ft.IconButton(
-                                                    icon=ft.Icons.SKIP_NEXT,
-                                                    icon_color="white"
-                                                )
-                                            ],
-                                        ),
-                                    ],
-                                )
-                            ),
-                appbar=page.appbar,
-            ),
+            app_state.view_store.main_view
         )
         if page.route == '/client_id_form':
             page.views.append(
-                ft.View(
-                    '/client_id_form',
-                    controls=[
-                        ft.Row(
-                            controls=[
-                                app_state.client_id_input_field,
-                                app_state.client_id_submit_button,
-                            ]
-                        )
-                    ]
-                )
+                app_state.view_store.client_id_form
             )
 
         if page.route == '/settings':
             page.views.append(
-                ft.View(
-                    '/settings',
-                    controls=[
-                        ft.Column(
-                            controls=[
-                                app_state.client_id_input_field,
-                                app_state.client_id_submit_button,
-                                app_state.clear_client_id_button
-                            ]
-                        )
-                    ],
-                    appbar=page.appbar
-                )
+                app_state.view_store.settings
             )
         page.update()
 
@@ -119,24 +32,7 @@ def main(page: ft.Page):
         top_view = page.views[-1]
         page.go(top_view.route)
 
-    page.appbar = ft.AppBar(
-        leading=ft.IconButton(
-            icon=ft.Icons.MENU,
-            icon_color="white",
-            on_click=lambda _: page.go("/"),
-        ),
-        title=ft.Text("SpotiFly"),
-        center_title=True,
-        bgcolor="black",
-        actions=[
-            app_state.logout_button,
-            ft.IconButton(
-                icon=ft.Icons.SETTINGS,
-                icon_color="white",
-                on_click=lambda _: page.go("/settings"),
-            ),
-        ]
-    )
+    page.appbar = app_state.control_store.app_bar
     app_state.check_logged_in()
 
     page.on_route_change = route_change

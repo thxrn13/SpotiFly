@@ -3,14 +3,18 @@ import spotipy
 import flet as ft
 from spotipy.oauth2 import SpotifyPKCE
 from dotenv import load_dotenv
+from _utils.controls import ControlStore
+from _utils.views import ViewStore
 import configparser
 from pathlib import Path
-cwd = Path(__file__).parents[1]
+cwd = Path(__file__).parents[2]
 
 
 class AppState:
     def __init__(self, page):
         self.page = page
+        self.control_store = ControlStore(self)
+        self.view_store = ViewStore(self, self.control_store)
 
         load_dotenv()
 
@@ -37,7 +41,6 @@ class AppState:
                 scope=self.scopes
             )
             self.sp = spotipy.Spotify(auth_manager=self.provider)
-        self.logged_user = ft.Text(visible=False)
 
         # # Initialize audio player and buttons
         # self.audio1 = fa.Audio(
@@ -47,74 +50,11 @@ class AppState:
         # )
         # self.page.overlay.append(self.audio1)
 
-        self.clear_client_id_button = ft.ElevatedButton(
-            text="Delete Client ID",
-            bgcolor="red",
-            color="black",
-            on_click=lambda e: self.delete_client_id(e),
-            visible=True
-        )
-
-        self.play_pause_button = ft.IconButton(
-            icon=ft.Icons.PLAY_ARROW,
-            icon_color="black",
-            bgcolor="green",
-            on_click=None,
-            icon_size=20,
-        )
-
-        self.login_button = ft.ElevatedButton(
-            text="Login with Spotify",
-            on_click=lambda e: self.perform_login(e),
-            bgcolor="green",
-            color="white",
-            width=150,
-            height=25
-        )
-
-        self.logout_button = ft.ElevatedButton(
-            text="Logout",
-            on_click=lambda e: self.logout_button_click(e),
-            bgcolor="red",
-            color="white",
-            width=100,
-            height=25,
-            visible=False,
-        )
-
-        self.playlists_view = ft.ListView(
-            visible=False,
-            spacing=10,
-            padding=10,
-            controls=[],
-            width=400,
-            expand=True,
-        )
-
-        self.tracks_view = ft.ListView(
-            visible=False,
-            spacing=10,
-            padding=10,
-            controls=[],
-            width=400,
-            expand=True,
-        )
-
-        self.client_id_input_field = ft.TextField(
-                                    hint_text="Paste your Client ID Here",
-                                )
-        self.client_id_submit_button = ft.ElevatedButton(
-                    text="Submit",
-                    bgcolor="green",
-                    color="black",
-                    on_click=lambda e: self.save_client_id(e),
-                    )
-
     def get_client_id(self):
         self.page.go('/client_id_form')
 
     def save_client_id(self, e):
-        os.environ["CLIENT_ID"] = str(self.client_id_input_field.value)
+        os.environ["CLIENT_ID"] = str(self.control_store.client_id_input_field.value)
         with open(os.path.join(cwd, '.env'), 'x') as f:
             f.write(f"CLIENT_ID = {os.getenv("CLIENT_ID")}")
         self.client_id = os.getenv("CLIENT_ID")
@@ -151,11 +91,11 @@ class AppState:
 
     def change_play_pause_button(self, e):
         if e.data == ft.AudioState.PAUSED.value:
-            self.play_pause_button.icon = ft.Icons.PLAY_ARROW
-            self.play_pause_button.on_click = None
+            self.control_store.play_pause_button.icon = ft.Icons.PLAY_ARROW
+            self.control_store.play_pause_button.on_click = None
         elif e.data == ft.AudioState.PLAYING.value:
-            self.play_pause_button.icon = ft.Icons.PAUSE
-            self.play_pause_button.on_click = None
+            self.control_store.play_pause_button.icon = ft.Icons.PAUSE
+            self.control_store.play_pause_button.on_click = None
         self.page.update()
 
     def logout_button_click(self, e):
@@ -164,20 +104,20 @@ class AppState:
     def on_logout(self, e):
         os.remove(os.path.join(cwd, '.cache'))
         self.toggle_login_button()
-        self.playlists_view.visible = False
-        self.playlists_view.controls.clear()
-        self.tracks_view.visible = False
-        self.tracks_view.controls.clear()
-        self.logged_user.visible = False
+        self.control_store.playlists_view.visible = False
+        self.control_store.playlists_view.controls.clear()
+        self.control_store.tracks_view.visible = False
+        self.control_store.tracks_view.controls.clear()
+        self.control_store.logged_user.visible = False
         self.page.update()
 
     def toggle_login_button(self):
-        if self.login_button.visible:
-            self.login_button.visible = False
-            self.logout_button.visible = True
+        if self.control_store.login_button.visible:
+            self.control_store.login_button.visible = False
+            self.control_store.logout_button.visible = True
         else:
-            self.login_button.visible = True
-            self.logout_button.visible = False
+            self.control_store.login_button.visible = True
+            self.control_store.logout_button.visible = False
         self.page.update()
 
     def get_playlists(self, offset=0, limit=50):
@@ -199,29 +139,16 @@ class AppState:
 
     def show_playlists(self):
         print("Showing playlists")
-        self.playlists_view.visible = True
-        self.playlists_view.controls.clear()
+        self.control_store.playlists_view.visible = True
+        self.control_store.playlists_view.controls.clear()
         playlists = self.get_playlists()
         print(f"Playlists fetched: {len(playlists)}")
-        self.playlists_view.controls.append(
+        self.control_store.playlists_view.controls.append(
             ft.Text("Your Playlists", size=20, weight=ft.FontWeight.BOLD)
         )
         for playlist in playlists:
-            self.playlists_view.controls.append(
-                ft.Card(
-                    content=ft.ListTile(
-                        leading=ft.Image(
-                            src=playlist["images"][0].get("url", ""),
-                            width=30,
-                            height=30,
-                            fit=ft.ImageFit.COVER
-                        ),
-                        title=ft.Text(playlist["name"]),
-                        subtitle=ft.Text(f"{playlist['num_tracks']} tracks"),
-                        data=playlist,
-                        on_click=lambda e: self.show_tracks(e.control.data)
-                    ),
-                )
+            self.control_store.playlists_view.controls.append(
+                self.control_store.create_playlist_card(playlist)
             )
         self.page.update()
 
@@ -262,28 +189,16 @@ class AppState:
 
     def show_tracks(self, playlist):
         print(f"Showing tracks for playlist: {playlist['name']}")
-        self.tracks_view.visible = True
-        self.tracks_view.controls.clear()
+        self.control_store.tracks_view.visible = True
+        self.control_store.tracks_view.controls.clear()
         tracks = self.get_tracks(playlist)
         print(f"Tracks fetched: {len(tracks)}")
-        self.tracks_view.controls.append(
+        self.control_store.tracks_view.controls.append(
             ft.Text(f"{playlist['name']}", size=20, weight=ft.FontWeight.BOLD)
         )
         for track in tracks:
-            self.tracks_view.controls.append(
-                ft.Card(
-                    content=ft.ListTile(
-                        leading=ft.Image(
-                            src=track.get('art', [{}])[0].get('url', ''),
-                            width=30,
-                            height=30,
-                            fit=ft.ImageFit.COVER
-                        ),
-                        title=ft.Text(track.get("name", "Unknown Track")),
-                        subtitle=ft.Text(track.get('artist', 'Unknown Artist')),
-                        on_click=self.play_track(track['id'])
-                    ),
-                )
+            self.control_store.tracks_view.controls.append(
+                self.control_store.create_track_card(track)
             )
         self.page.update()
 
